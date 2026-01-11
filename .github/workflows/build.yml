@@ -1,1 +1,147 @@
+name: Build iOS App
 
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:  # Manual trigger button
+
+jobs:
+  build:
+    runs-on: macos-latest
+    timeout-minutes: 30
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Xcode
+        run: |
+          sudo xcode-select -switch /Applications/Xcode.app
+          echo "Xcode version:"
+          xcodebuild -version
+          
+      - name: Read config
+        id: config
+        run: |
+          echo "Reading config.json..."
+          APP_NAME=$(jq -r '.app_name' config.json)
+          BUNDLE_ID=$(jq -r '.bundle_id' config.json)
+          VERSION=$(jq -r '.version' config.json)
+          BUILD_NUM=$(jq -r '.build_number' config.json)
+          MIN_IOS=$(jq -r '.minimum_ios' config.json)
+          ORIENTATION=$(jq -r '.orientation' config.json)
+          
+          echo "APP_NAME=$APP_NAME" >> $GITHUB_OUTPUT
+          echo "BUNDLE_ID=$BUNDLE_ID" >> $GITHUB_OUTPUT
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "BUILD_NUM=$BUILD_NUM" >> $GITHUB_OUTPUT
+          echo "MIN_IOS=$MIN_IOS" >> $GITHUB_OUTPUT
+          echo "ORIENTATION=$ORIENTATION" >> $GITHUB_OUTPUT
+          
+      - name: Copy Resources
+        run: |
+          echo "Setting up resources..."
+          mkdir -p App/Resources
+          cp -r Resources/ App/Resources/ 2>/dev/null || echo "No custom resources, using defaults"
+          
+      - name: Generate Package.swift
+        run: |
+          echo "Generating Package.swift..."
+          sed "s/{{APP_NAME}}/${{ steps.config.outputs.APP_NAME }}/g" \
+              App/Package.swift.template > App/Package.swift
+          echo "✅ Package.swift generated"
+          
+      - name: Generate Info.plist
+        run: |
+          echo "Generating Info.plist..."
+          
+          # Set orientation strings
+          if [ "${{ steps.config.outputs.ORIENTATION }}" = "portrait" ]; then
+              PORTRAIT="<string>UIInterfaceOrientationPortrait</string>"
+              LANDSCAPE=""
+          elif [ "${{ steps.config.outputs.ORIENTATION }}" = "landscape" ]; then
+              PORTRAIT=""
+              LANDSCAPE="<string>UIInterfaceOrientationLandscapeLeft</string><string>UIInterfaceOrientationLandscapeRight</string>"
+          else # "all"
+              PORTRAIT="<string>UIInterfaceOrientationPortrait</string>"
+              LANDSCAPE="<string>UIInterfaceOrientationLandscapeLeft</string><string>UIInterfaceOrientationLandscapeRight</string>"
+          fi
+          
+          # Escape for sed
+          PORTRAIT_ESC=$(echo "$PORTRAIT" | sed 's/[\/&]/\\&/g')
+          LANDSCAPE_ESC=$(echo "$LANDSCAPE" | sed 's/[\/&]/\\&/g')
+          
+          sed -e "s/{{APP_NAME}}/${{ steps.config.outputs.APP_NAME }}/g" \
+              -e "s/{{BUNDLE_ID}}/${{ steps.config.outputs.BUNDLE_ID }}/g" \
+              -e "s/{{VERSION}}/${{ steps.config.outputs.VERSION }}/g" \
+              -e "s/{{BUILD_NUMBER}}/${{ steps.config.outputs.BUILD_NUM }}/g" \
+              -e "s/{{MINIMUM_IOS}}/${{ steps.config.outputs.MIN_IOS }}/g" \
+              -e "s/{{ORIENTATION_PORTRAIT}}/$PORTRAIT_ESC/g" \
+              -e "s/{{ORIENTATION_LANDSCAPE}}/$LANDSCAPE_ESC/g" \
+              App/Info.plist.template > App/Info.plist
+          
+          echo "✅ Info.plist generated"
+          
+      - name: Build Swift Package
+        run: |
+          echo "Building app..."
+          cd App
+          
+          # Build for iOS
+          swift build -c release \
+                     --arch arm64 \
+                     -Xswiftc "-sdk" \
+                     -Xswiftc "$(xcrun --sdk iphoneos --show-sdk-path)" \
+                     -Xswiftc "-target" \
+                     -Xswiftc "arm64-apple-ios${{ steps.config.outputs.MIN_IOS }}"
+          
+          echo "✅ Build successful"
+          
+      - name: Create .app Bundle
+        run: |
+          echo "Creating .app bundle..."
+          cd App
+          
+          # Create app directory structure
+          mkdir -p "${{ steps.config.outputs.APP_NAME }}.app"
+          
+          # Copy executable
+          cp .build/release/App "${{ steps.config.outputs.APP_NAME }}.app/${{ steps.config.outputs.APP_NAME }}"
+          
+          # Copy Info.plist
+          cp Info.plist "${{ steps.config.outputs.APP_NAME }}.app/"
+          
+          # Copy resources
+          cp -r Resources/Assets.xcassets "${{ steps.config.outputs.APP_NAME }}.app/" 2>/dev/null || true
+          
+          echo "✅ .app bundle created"
+          
+      - name: Create .ipa
+        run: |
+          echo "Creating .ipa file..."
+          cd App
+          
+          # Create Payload directory
+          mkdir -p Payload
+          mv "${{ steps.config.outputs.APP_NAME }}.app" Payload/
+          
+          # Zip into .ipa
+          zip -qr "${{ steps.config.outputs.APP_NAME }}.ipa" Payload
+          
+          echo "✅ .ipa created: ${{ steps.config.outputs.APP_NAME }}.ipa"
+          
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: iOS-App
+          path: |
+            App/*.ipa
+            App/Payload/
+          retention-days: 7
+          
+      - name: Show Success
+        run: |
+          echo "🎉 BUILD SUCCESSFUL!"
+          echo "App: ${{ steps.config.outputs.APP_NAME }}"
+          echo "Version: ${{ steps.config.outputs.VERSION }} (${{ steps.config.outputs.BUILD_NUM }})"
+          echo "Download the .ipa from the Artifacts section above!"
