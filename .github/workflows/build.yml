@@ -124,15 +124,7 @@ jobs:
                   DEVELOPMENT_TEAM: ""
                   CODE_SIGN_IDENTITY: "Apple Development"
                   CODE_SIGN_STYLE: Automatic
-              dependencies:
-                - framework: Foundation.framework
-                  weak: false
-                - framework: UIKit.framework
-                  weak: false
-                - framework: SwiftUI.framework
-                  weak: false
-                - framework: Combine.framework
-                  weak: false
+
           EOF
           
           # Generate Xcode project
