@@ -55,7 +55,7 @@ The build system will automatically scale your icon to all required iOS sizes.
 - **Cross-platform development workflows**
 
 ## Demo
-![Demo GIF](demo.gif)
+<img src="demo.gif" width="350" height="700">
 
 ## ✅ PROVEN WORKING
 - ✅ **Compiles SwiftUI** on Windows via GitHub Actions
