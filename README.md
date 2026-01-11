@@ -70,5 +70,5 @@ Found a bug? Have a feature request? Open an issue or PR!
 MIT - Free to use, modify, and distribute.
 
 ## Why?
-Because Apple not making a simple solution for users who wanna build iOS apps on Windows is just them being lazy.
+Because I want to create new paths for people.
 
