@@ -1,4 +1,4 @@
-.# 🚀 SwiftBuild for Windows - iOS Development Without a Mac
+# 🚀 SwiftBuild for Windows - iOS Development Without a Mac
 
 > **Compile SwiftUI apps on Windows using GitHub Actions. Get real .ipa files without Apple hardware.**
 
