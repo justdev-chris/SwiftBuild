@@ -20,7 +20,7 @@
 ## 🎨 Custom App Icon (Optional)
 
 ### Option 1: Use Default Icon
-The template includes a clean blue default icon. No action needed.
+If no icon, then apple uses the default icon. No action needed.
 
 ### Option 2: Use Custom Icon
 1. Create a **1024x1024 PNG** icon
@@ -53,6 +53,9 @@ The build system will automatically scale your icon to all required iOS sizes.
 - **Prototyping iOS apps** from Windows
 - **CI/CD for open-source iOS projects**
 - **Cross-platform development workflows**
+
+## Demo
+![Demo GIF](demo.gif)
 
 ## 🤝 Contributing
 Found a bug? Have a feature request? Open an issue or PR!
