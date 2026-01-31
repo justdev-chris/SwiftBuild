@@ -1,6 +1,6 @@
 {
-  "app_name": "YourAppName", 
-  "bundle_id": "com.yourname.myapp",
+  "app_name": "Epstein's Temple", 
+  "bundle_id": "com.nword.etc",
   "version": "1.0.0",
   "build_number": "1",
   "minimum_ios": "15.0",
